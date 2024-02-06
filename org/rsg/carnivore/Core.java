@@ -65,38 +65,44 @@ public class Core implements PacketListener {
 	
 	private void openCaptureOnEveryDevice(HashMap<?, ?> d) {
 		Iterator<?> it = d.keySet().iterator();
-		//int instance = 0;
+		int limit = 8;
+		int instance = 0;
 		while(it.hasNext()){
-			String name = (String)it.next();
+			if (instance != 0){
+				String name = (String)it.next();
 
-			if (!name.substring(0,2).equals("lo")) { //ignore loopback? (lo, lo0)			
-				
-				//CREATE CAPTURE INSTANCE
-				packetcapture = new PacketCapture();
-				try {
-					packetcapture.open(name, SNAP_LENGTH, true, PacketCapture.DEFAULT_TIMEOUT);
+				if (!name.substring(0,2).equals("lo")) { //ignore loopback? (lo, lo0)			
 					
-				//if we've gotten this far it generally means the machine has network adapters 
-				//that we can see, but they are offline for some reason (cable unplugged, etc.)
-				} catch (CaptureDeviceOpenException e) {
+					//CREATE CAPTURE INSTANCE
+					packetcapture = new PacketCapture();
+					try {
+						packetcapture.open(name, SNAP_LENGTH, true, PacketCapture.DEFAULT_TIMEOUT);
+						
+					//if we've gotten this far it generally means the machine has network adapters 
+					//that we can see, but they are offline for some reason (cable unplugged, etc.)
+					} catch (CaptureDeviceOpenException e) {
 
-					//this is generally a windows exception
-					System.err.println("["+this.getClass().getName()+"] Warning -- can't open device \"" + name + "\" (CaptureDeviceOpenException)");
-					System.err.println(e);
-					break;
+						//this is generally a windows exception
+						System.err.println("["+this.getClass().getName()+"] Warning -- can't open device \"" + name + "\" (CaptureDeviceOpenException)");
+						System.err.println(e);
+						break;
+					}
+					Log.debug("["+this.getClass().getName()+"] opened capture on device \"" + name + "\"");
+					
+					//set filter
+					try {
+						packetcapture.setFilter(filter, true);
+					} catch (InvalidFilterException e) {
+						e.printStackTrace();
+					}
+					
+					//ADD CALLBACK
+					packetcapture.addPacketListener(this);
+					packetcapturethreads.add(new PacketCaptureThread(packetcapture));  //save instance in thread
 				}
-				Log.debug("["+this.getClass().getName()+"] opened capture on device \"" + name + "\"");
-				
-				//set filter
-				try {
-					packetcapture.setFilter(filter, true);
-				} catch (InvalidFilterException e) {
-					e.printStackTrace();
-				}
-				
-				//ADD CALLBACK
-				packetcapture.addPacketListener(this);
-				packetcapturethreads.add(new PacketCaptureThread(packetcapture));  //save instance in thread
+			}
+			if (++instance == limit) {
+        	break;
 			}
 	    } 
 	}
