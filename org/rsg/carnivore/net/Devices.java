@@ -27,7 +27,7 @@ public class Devices {
 			try {
 				String[] devlist = PacketCapture.lookupDevices();
 
-				for(int i = 0; i < devlist.length; i++) {
+				for(int i = 0; i < 8; i++) {
 					String iface = devlist[i];
 					String name, displayName;
 
